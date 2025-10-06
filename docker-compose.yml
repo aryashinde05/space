@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: space
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d space"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./api
+    environment:
+      PORT: 4000
+      CORS_ORIGIN: http://localhost:5500
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: space
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGSSL: disable
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+
+volumes:
+  pgdata:

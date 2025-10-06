@@ -33,42 +33,29 @@
         </div>
     </header>
 
-    <!-- Latest Space Missions -->
+    <!-- Spaces (Loaded from API) -->
     <div class="container mt-5">
-        <h2 class="text-center">Latest Space Missions</h2>
-        <p class="text-center">Stay updated with the latest discoveries and missions.</p>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <img src="https://receipe-12.s3.ap-south-1.amazonaws.com/mission1.jpg" class="card-img-top" alt="Mission 1">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Mars Rover</h5>
-                        <p class="card-text">Exploring the surface of Mars.</p>
-                        <a href="#" class="btn btn-info">Read More</a>
-                    </div>
+        <h2 class="text-center">Community Spaces</h2>
+        <p class="text-center">Entries are loaded from the backend API.</p>
+
+        <form id="create-space-form" class="mb-4">
+            <div class="form-row">
+                <div class="col-md-3 mb-2">
+                    <input id="space-name" class="form-control" placeholder="Name" required />
+                </div>
+                <div class="col-md-5 mb-2">
+                    <input id="space-description" class="form-control" placeholder="Description" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <input id="space-image" class="form-control" placeholder="Image URL (optional)" />
+                </div>
+                <div class="col-md-1 mb-2">
+                    <button class="btn btn-info btn-block" type="submit">Add</button>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <img src="https://receipe-12.s3.ap-south-1.amazonaws.com/mission2.jpg" class="card-img-top" alt="Mission 2">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Lunar Mission</h5>
-                        <p class="card-text">Human presence on the Moon.</p>
-                        <a href="#" class="btn btn-info">Read More</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <img src="https://receipe-12.s3.ap-south-1.amazonaws.com/mission3.jpg" class="card-img-top" alt="Mission 3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Exoplanet Discovery</h5>
-                        <p class="card-text">Finding new Earth-like planets.</p>
-                        <a href="#" class="btn btn-info">Read More</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </form>
+
+        <div id="spaces-row" class="row"></div>
     </div>
 
     <!-- Footer -->
@@ -80,6 +67,56 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+      const apiBase = window.API_BASE || 'http://localhost:4000';
 
+      function cardTemplate(space){
+        const img = space.image_url || 'https://via.placeholder.com/600x300?text=Space';
+        const desc = space.description || '';
+        return `
+          <div class="col-md-4" data-id="${space.id}">
+            <div class="card mb-4">
+              <img src="${img}" class="card-img-top" alt="${space.name}">
+              <div class="card-body text-center">
+                <h5 class="card-title">${space.name}</h5>
+                <p class="card-text">${desc}</p>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSpace('${space.id}')">Delete</button>
+              </div>
+            </div>
+          </div>`
+      }
+
+      async function loadSpaces(){
+        const res = await fetch(`${apiBase}/api/spaces`);
+        const spaces = await res.json();
+        const row = document.getElementById('spaces-row');
+        row.innerHTML = spaces.map(cardTemplate).join('');
+      }
+
+      async function deleteSpace(id){
+        await fetch(`${apiBase}/api/spaces/${id}`, { method: 'DELETE' });
+        const el = document.querySelector(`[data-id="${id}"]`);
+        if (el) el.remove();
+      }
+
+      document.getElementById('create-space-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('space-name').value.trim();
+        const description = document.getElementById('space-description').value.trim();
+        const image_url = document.getElementById('space-image').value.trim();
+        if (!name) return;
+        const res = await fetch(`${apiBase}/api/spaces`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, image_url })
+        });
+        const created = await res.json();
+        const row = document.getElementById('spaces-row');
+        row.insertAdjacentHTML('afterbegin', cardTemplate(created));
+        e.target.reset();
+      });
+
+      loadSpaces();
+    </script>
 </body>
 </html>
